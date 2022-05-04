@@ -1,5 +1,6 @@
 import csv
 import random
+import math
 
 ## TODO Assignment:
 # Build the functions learntree and classify of the DecisionTree class
@@ -231,7 +232,7 @@ class DecisionTree:
                     optimal_attribute["children"] = children
 
                 #
-                # Handles if no possbible split exists for this attribute; returns leaf node with all current examples
+                # Handles if no possible split exists for this attribute; returns leaf node with all current examples
                 if optimal_attribute["name"] is None:
                     labels = []
                     for example in examples:
@@ -263,17 +264,64 @@ class DecisionTree:
 
                 return decision_node
 
-    def entrophy(self,examples):
-        return None
-
-    def gain(self, examples):
-        return None
 
     def get_attributes(self, example):
         return list(example[0].keys())
 
+
     def split(self, examples, splitting_attribute, threshold):
-        return None
+        greater_than_equal_to = []
+        less_than = []
+        miss = []
+        for example in examples:
+            try:
+                if example[splitting_attribute] >= threshold:
+                    greater_than_equal_to.append(example)
+                else:
+                    less_than.append(example)
+            except:
+                miss.append(example)
+
+        return less_than, greater_than_equal_to
+
+    def gain(self, parent_examples, child_examples):
+        # from the provided reading:
+        # IG(parent, child) = entrophy(parent) - [P(c1) x entrophy(c1) + P(c2) x entrophy(c2) + [...] ]
+        # Outline:
+        # get entrophy of parent - [loop of P(ci) x entrophy(ci)]
+
+        parent_entrophy = self.entrophy(parent_examples)
+
+        loop_val = 0
+        for child in child_examples:
+            child_entrophy = self.entrophy(child)
+            child_probability = len(child)/len(parent_entrophy)
+            loop_val = loop_val + (child_entrophy * child_probability)
+
+        return parent_entrophy - loop_val
+
+    def entrophy(self, examples):
+        # from the provided reading:
+        # Entrophy = - P1 x log(P1) - P2 x log(P2) - [...]
+        # Outline:
+        # Entrophy = loop[ - Pi x log(Pi)]
+        entropy = 0
+        attribute_list = {}
+        for example in examples:
+            name = example[self.class_name]
+            if name not in attribute_list:
+                attribute_list[name] = 1
+            else:
+                attribute_list[name] += 1
+
+        for attribute in attribute_list.keys():
+            probability = attribute_list[attribute] / len(examples)
+            entropy -= (probability * math.log(probability, 2))
+
+        return entropy
+
+
+
     
     def classify(self, example):
         """Perform inference on a single example.
