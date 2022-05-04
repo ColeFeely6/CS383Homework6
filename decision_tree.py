@@ -1,6 +1,9 @@
 import csv
 import random
 
+## TODO Assignment:
+# Build the functions learntree and classify of the DecisionTree class
+#
 
 def read_data(csv_path):
     """Read in the training data from a csv file.
@@ -138,6 +141,28 @@ class DecisionTree:
                 the class label.
         
         Returns: a DecisionNode or LeafNode representing the tree
+
+        Recursive function and at each level, it should:
+        1) Use a list of examples to identify the best attribute and threshold that to split on
+        2) Using that split criteria, then divide the examples and perform the same procedure on that subset
+        3) miss_lt parameter (bool) determines the child node to be used to classify examples with a missing value,
+        and should specify whichever subtree has more examples in the training data.
+
+        count = 0
+        while count <= len(examples):
+            list = get examples
+            for i in list:
+                if best attribute:
+                    threshold = list[i]
+            for j in list:
+                something for miss_lt
+                if j > threshold:
+                    splitleft = split this way
+                if j == threshold:
+                    splitmid = split this way
+                if j < threshold:
+                    splitright = split this way
+                s
         """
         #
         # fill in the function body here!
@@ -151,11 +176,14 @@ class DecisionTree:
             example: the instance being classified
 
         Returns: a tuple containing a class label and a probability
+
+        Notes from assignment worksheet:
+        Should use the classify() method defined in other tree nodes
         """
         #
         # fill in the function body here!
         #
-        return "medium", 0.42  # fix this line!
+        return self.root.classify(example)
 
     def __str__(self):
         """String representation of tree, calls _ascii_tree()."""
