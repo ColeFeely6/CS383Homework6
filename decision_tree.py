@@ -148,26 +148,59 @@ class DecisionTree:
         3) miss_lt parameter (bool) determines the child node to be used to classify examples with a missing value,
         and should specify whichever subtree has more examples in the training data.
 
-        count = 0
-        while count <= len(examples):
-            list = get examples
-            for i in list:
-                if best attribute:
-                    threshold = list[i]
-            for j in list:
-                something for miss_lt
-                if j > threshold:
-                    splitleft = split this way
-                if j == threshold:
-                    splitmid = split this way
-                if j < threshold:
-                    splitright = split this way
-                s
+
         """
-        #
-        # fill in the function body here!
-        #
-        return None  # fix this line!
+
+        # STEP 1)
+
+        # Check if all class labels are in the example set
+        # If they are, return a LeafNode with that class label (the label that this class mostly represents)
+
+        for instance in examples:
+            instance_class_name = instance[self.class_name]
+            for example_label in instance_class_name:
+                pred_class = examples[0][self.class_name]
+                if example_label == pred_class:
+                    # LeafNode(pred_class, pred_class_count, total_count)
+                    return LeafNode(pred_class, len(examples), len(examples))
+
+        # STEP 2)
+
+        # Check if this example set is at the minimum leaf count
+        # If it is, return a LeafNode with that class label
+
+        if len(examples) == self.min_leaf_count:
+            label_list = []
+            for instance in examples:
+                label_list.append(instance[self.class_name])
+            pred_class = max(label_list, key=label_list.count)
+            return LeafNode(pred_class, label_list.count(pred_class), len(examples))
+
+        # STEP 3)
+
+        # Those were our base/ best case situations. Now we have the bulk of the code
+        # Iterate through the examples and go through every attribute and every possible threshold value
+        # Best threshold value, we will split on
+        # Calculate the info gain that for the iteration's attribute and threshold value
+        # Store that value and store the children that have the highest info gain
+        # STEP 4) ??? --> Recusively go through children
+        # If splitting is not possible, return a LeafNode with the parent's example set
+        # Finally, create a decision node (with children nodes)
+
+
+
+
+    def entrophy(self,examples):
+        return None
+
+    def gain(self, examples):
+        return None
+
+    def get_attributes(self, example):
+        return list(example[0].keys())
+
+    def split(self, examples, splitting_attribute, threshold):
+        return None
     
     def classify(self, example):
         """Perform inference on a single example.
