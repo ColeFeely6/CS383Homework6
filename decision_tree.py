@@ -156,9 +156,9 @@ class DecisionTree:
         # Check if all class labels are in the example set
         # If they are, return a LeafNode with that class label (the label that this class mostly represents)
 
-        for instance in examples:
-            instance_class_name = instance[self.class_name]
-            for example_label in instance_class_name:
+        for example in examples:
+            example_class_name = example[self.class_name]
+            for example_label in example_class_name:
                 pred_class = examples[0][self.class_name]
                 if example_label == pred_class:
                     # LeafNode(pred_class, pred_class_count, total_count)
@@ -170,11 +170,11 @@ class DecisionTree:
         # If it is, return a LeafNode with that class label
 
         if len(examples) == self.min_leaf_count:
-            label_list = []
-            for instance in examples:
-                label_list.append(instance[self.class_name])
-            pred_class = max(label_list, key=label_list.count)
-            return LeafNode(pred_class, label_list.count(pred_class), len(examples))
+            labels = []
+            for example in examples:
+                labels.append(example[self.class_name])
+            pred_class = max(labels, key=labels.count)
+            return LeafNode(pred_class, labels.count(pred_class), len(examples))
 
         # STEP 3)
 
@@ -183,12 +183,85 @@ class DecisionTree:
         # Best threshold value, we will split on
         # Calculate the info gain that for the iteration's attribute and threshold value
         # Store that value and store the children that have the highest info gain
-        # STEP 4) ??? --> Recusively go through children
-        # If splitting is not possible, return a LeafNode with the parent's example set
-        # Finally, create a decision node (with children nodes)
 
 
+        else:
+            # Get all the possible attributes to split on
+            attributes = self.get_attributes(examples)
 
+            # Init a dictionary that holds characteristics of the best attribute, update this with the
+            # Best attribute during each iteration
+            optimal_attribute = {
+                "name":None,
+                "threshold":0,
+                "info-gain":0,
+                "children":(None,None), }
+
+            # BEGIN THE GREAT ITERATION THROUGH THE ATTRIBUTES!!! HAHAHAHHAHAHAHHAAHOHOHOOHEHEHEHHEEHE
+            for attribute in attributes:
+                # Skip the unnecessary attribute
+                if (attribute == self.class_name) or (attribute == "town"):
+                    continue
+
+                # GET THRESHOLDS
+                thresholds = []
+                for example in examples:
+                    if example[attribute] != None:
+                        thresholds.append(example[attribute])
+
+                for threshold in thresholds:
+                    # Split examples into children examples on this threshold and attribute
+                    # This way we can optimally analyze each example based on attribute and threshold
+                    children = self.split_examples(examples, attribute, threshold)
+
+                 # check if split is valid
+                # Avoid the first two attrivutes again because they are unnecessary
+                if len(children[0]) < self.min_leaf_count or len(children[1]) < self.min_leaf_count:
+                    continue
+
+                # NOW WE GET THE INFO GAIN FOR THIS CHILD USING THIS ITERATION'S ATTRIBUTE AND THRESHOLD
+                info_gain = self.gain(examples, children)
+
+                # See if this new info gain is better than the prev optimal
+                if info_gain > optimal_attribute["info-gain"]:
+                    # If optimal, update our optimal attribute dictionary
+                    optimal_attribute["info-gain"] = info_gain
+                    optimal_attribute["name"] = attribute
+                    optimal_attribute["threshold"] = threshold
+                    optimal_attribute["children"] = children
+
+                #
+                # Handles if no possbible split exists for this attribute; returns leaf node with all current examples
+                if optimal_attribute["name"] is None:
+                    labels = []
+                    for example in examples:
+                        labels.append(example[self.class_name])
+
+                    pred_class = max(labels, key=labels.count)
+                    return LeafNode(pred_class, labels.count(pred_class), len(examples))
+
+                    # STEP 4)
+                    # Begin recursive phase
+                    # Go through the children of the split sections and create decision nodes based on the attributes
+
+
+                    nodes = []
+
+                    for child in optimal_attribute["children"]: #optimal_attribute["children"] = (Child, Child)
+                        node = self.learn_tree(child) # RECURSION
+                        nodes.append(node)
+
+                    # TODO May need to flip these around
+                    # creates decision node and sets child_miss to child_lt or ge depending on size of lt and ge
+                    if len(optimal_attribute["children"][1]) <= len(optimal_attribute["children"][0]):
+
+                        decision_node = DecisionNode(optimal_attribute["name"], optimal_attribute["threshold"], nodes[0], nodes[1],
+                                                     nodes[0])
+                    else:
+                        decision_node = DecisionNode(optimal_attribute["name"], optimal_attribute["threshold"], nodes[0], nodes[1],
+                                                     nodes[1])
+
+                return decision_node
 
     def entrophy(self,examples):
         return None
