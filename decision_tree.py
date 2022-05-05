@@ -2,13 +2,14 @@ import csv
 import random
 import math
 
+
 ## TODO Assignment:
 # Build the functions learntree and classify of the DecisionTree class
 #
 
 def read_data(csv_path):
     """Read in the training data from a csv file.
-    
+
     The examples are returned as a list of Python dictionaries, with column names as keys.
     """
     examples = []
@@ -22,21 +23,22 @@ def read_data(csv_path):
                     try:
                         example[k] = float(v)
                     except ValueError:
-                         example[k] = v
+                        example[k] = v
             examples.append(example)
     return examples
 
 
 def train_test_split(examples, test_perc):
     """Randomly data set (a list of examples) into a training and test set."""
-    test_size = round(test_perc*len(examples))    
+    test_size = round(test_perc * len(examples))
     shuffled = random.sample(examples, len(examples))
     return shuffled[test_size:], shuffled[:test_size]
 
 
 class TreeNodeInterface():
     """Simple "interface" to ensure both types of tree nodes must have a classify() method."""
-    def classify(self, example): 
+
+    def classify(self, example):
         raise NotImplementedError
 
 
@@ -53,18 +55,18 @@ class DecisionNode(TreeNodeInterface):
                 values that are less than test_attr_threshold
             child_ge: DecisionNode or LeafNode representing examples with test_attr_name
                 values that are greater than or equal to test_attr_threshold
-            miss_lt: True if nodes with a missing value for the test attribute should be 
-                handled by child_lt, False for child_ge                 
-        """    
-        self.test_attr_name = test_attr_name  
-        self.test_attr_threshold = test_attr_threshold 
+            miss_lt: True if nodes with a missing value for the test attribute should be
+                handled by child_lt, False for child_ge
+        """
+        self.test_attr_name = test_attr_name
+        self.test_attr_threshold = test_attr_threshold
         self.child_ge = child_ge
         self.child_lt = child_lt
         self.miss_lt = miss_lt
 
     def classify(self, example):
         """Classify an example based on its test attribute value.
-        
+
         Args:
             example: a dictionary { attr name -> value } representing a data instance
 
@@ -72,14 +74,15 @@ class DecisionNode(TreeNodeInterface):
         """
         test_val = example[self.test_attr_name]
         if test_val is None:
-            return self.child_miss.classify(example)
+            child_miss = self.child_lt if self.miss_lt else self.child_ge
+            return child_miss.classify(example)
         elif test_val < self.test_attr_threshold:
             return self.child_lt.classify(example)
         else:
             return self.child_ge.classify(example)
 
     def __str__(self):
-        return "test: {} < {:.4f}".format(self.test_attr_name, self.test_attr_threshold) 
+        return "test: {} < {:.4f}".format(self.test_attr_name, self.test_attr_threshold)
 
 
 class LeafNode(TreeNodeInterface):
@@ -92,7 +95,7 @@ class LeafNode(TreeNodeInterface):
             pred_class: class label for the majority class that this leaf represents
             pred_class_count: number of training instances represented by this leaf node
             total_count: the total number of training instances used to build the leaf node
-        """    
+        """
         self.pred_class = pred_class
         self.pred_class_count = pred_class_count
         self.total_count = total_count
@@ -100,7 +103,7 @@ class LeafNode(TreeNodeInterface):
 
     def classify(self, example):
         """Classify an example.
-        
+
         Args:
             example: a dictionary { attr name -> value } representing a data instance
 
@@ -110,7 +113,7 @@ class LeafNode(TreeNodeInterface):
         return self.pred_class, self.prob
 
     def __str__(self):
-        return "leaf {} {}/{}={:.2f}".format(self.pred_class, self.pred_class_count, 
+        return "leaf {} {}/{}={:.2f}".format(self.pred_class, self.pred_class_count,
                                              self.total_count, self.prob)
 
 
@@ -131,16 +134,16 @@ class DecisionTree:
         self.min_leaf_count = min_leaf_count
 
         # build the tree!
-        self.root = self.learn_tree(examples)  
+        self.root = self.learn_tree(examples)
 
     def learn_tree(self, examples):
         """Build the decision tree based on entropy and information gain.
-        
+
         Args:
             examples: training data to use for tree learning, as a list of dictionaries.  The
                 attribute stored in self.id_name is ignored, and self.class_name is consided
                 the class label.
-        
+
         Returns: a DecisionNode or LeafNode representing the tree
 
         Recursive function and at each level, it should:
@@ -155,15 +158,15 @@ class DecisionTree:
         # STEP 1)
 
         # Check if all class labels are in the example set
-        # If they are, return a LeafNode with that class label (the label that this class mostly represents)
+        # If they are, return a LeafNode with that class name (the label that this class mostly represents)
 
         for example in examples:
             example_class_name = example[self.class_name]
-            for example_label in example_class_name:
-                pred_class = examples[0][self.class_name]
-                if example_label == pred_class:
+            for name in example_class_name:
+                predicted_class = examples[0][self.class_name]
+                if name == predicted_class:
                     # LeafNode(pred_class, pred_class_count, total_count)
-                    return LeafNode(pred_class, len(examples), len(examples))
+                    return LeafNode(predicted_class, len(examples), len(examples))
 
         # STEP 2)
 
@@ -171,11 +174,13 @@ class DecisionTree:
         # If it is, return a LeafNode with that class label
 
         if len(examples) == self.min_leaf_count:
-            labels = []
+            names = []
+            #Iterate through the examples and extract the class names
             for example in examples:
-                labels.append(example[self.class_name])
-            pred_class = max(labels, key=labels.count)
-            return LeafNode(pred_class, labels.count(pred_class), len(examples))
+                names.append(example[self.class_name])
+
+            predicted_class = max(names, key=names.count)
+            return LeafNode(predicted_class, names.count(predicted_class), len(examples))
 
         # STEP 3)
 
@@ -185,24 +190,23 @@ class DecisionTree:
         # Calculate the info gain that for the iteration's attribute and threshold value
         # Store that value and store the children that have the highest info gain
 
-
         else:
             # Get all the possible attributes to split on
-            attributes = self.get_attributes(examples)
+            attributes = list(examples[0].keys())
 
             # Init a dictionary that holds characteristics of the best attribute, update this with the
             # Best attribute during each iteration
             optimal_attribute = {
-                "name":None,
-                "threshold":0,
-                "info-gain":0,
-                "children":(None,None), }
+                "name": None,
+                "threshold": 0,
+                "info-gain": 0,
+                "children": (None, None), }
 
             # BEGIN THE GREAT ITERATION THROUGH THE ATTRIBUTES!!! HAHAHAHHAHAHAHHAAHOHOHOOHEHEHEHHEEHE
             for attribute in attributes:
                 # Skip the unnecessary attribute
-                if (attribute == self.class_name) or (attribute == "town"):
-                    continue
+                if attribute == "town":
+                     continue
 
                 # GET THRESHOLDS
                 thresholds = []
@@ -213,12 +217,19 @@ class DecisionTree:
                 for threshold in thresholds:
                     # Split examples into children examples on this threshold and attribute
                     # This way we can optimally analyze each example based on attribute and threshold
-                    children = self.split_examples(examples, attribute, threshold)
+                    children = self.split(examples, attribute, threshold)
 
-                 # check if split is valid
-                # Avoid the first two attrivutes again because they are unnecessary
-                if len(children[0]) < self.min_leaf_count or len(children[1]) < self.min_leaf_count:
+                # If either of the splits do not have enough data needed
+                if len(children[0]) < self.min_leaf_count:
                     continue
+                if len(children[1]) < self.min_leaf_count:
+                    continue
+
+
+                #STEP 4)
+                # Here we will start determining the info gain
+                # Determine the best info-gain
+
 
                 # NOW WE GET THE INFO GAIN FOR THIS CHILD USING THIS ITERATION'S ATTRIBUTE AND THRESHOLD
                 info_gain = self.gain(examples, children)
@@ -231,43 +242,35 @@ class DecisionTree:
                     optimal_attribute["threshold"] = threshold
                     optimal_attribute["children"] = children
 
-                #
-                # Handles if no possible split exists for this attribute; returns leaf node with all current examples
-                if optimal_attribute["name"] is None:
-                    labels = []
-                    for example in examples:
-                        labels.append(example[self.class_name])
+            # If the attribute is none, handle like in Step 2
+            if optimal_attribute["name"] is None:
+                names = []
+                for example in examples:
+                    names.append(example[self.class_name])
 
-                    pred_class = max(labels, key=labels.count)
-                    return LeafNode(pred_class, labels.count(pred_class), len(examples))
+                    predicted_class = max(names, key=names.count)
+                    return LeafNode(predicted_class, names.count(predicted_class), len(examples))
 
-                    # STEP 4)
+                    # STEP 5)
                     # Begin recursive phase
                     # Go through the children of the split sections and create decision nodes based on the attributes
 
+            nodes = []
 
-                    nodes = []
+            for child in optimal_attribute["children"]:  # optimal_attribute["children"] = (Child, Child)
+                node = self.learn_tree(child)  # RECURSION
+                nodes.append(node)
 
-                    for child in optimal_attribute["children"]: #optimal_attribute["children"] = (Child, Child)
-                        node = self.learn_tree(child) # RECURSION
-                        nodes.append(node)
+            # TODO May need to flip these around
+            # creates decision node and sets child_miss to child_lt or ge depending on size of lt and ge
+            if len(optimal_attribute["children"][0]) > len(optimal_attribute["children"][1]):
+                decision_node = DecisionNode(optimal_attribute["name"], optimal_attribute["threshold"], nodes[0],
+                                             nodes[1], nodes[0])
+            else:
+                decision_node = DecisionNode(optimal_attribute["name"], optimal_attribute["threshold"], nodes[0],
+                                             nodes[1], nodes[1])
 
-                    # TODO May need to flip these around
-                    # creates decision node and sets child_miss to child_lt or ge depending on size of lt and ge
-                    if len(optimal_attribute["children"][1]) <= len(optimal_attribute["children"][0]):
-
-                        decision_node = DecisionNode(optimal_attribute["name"], optimal_attribute["threshold"], nodes[0], nodes[1],
-                                                     nodes[0])
-                    else:
-                        decision_node = DecisionNode(optimal_attribute["name"], optimal_attribute["threshold"], nodes[0], nodes[1],
-                                                     nodes[1])
-
-                return decision_node
-
-
-    def get_attributes(self, example):
-        return list(example[0].keys())
-
+        return decision_node
 
     def split(self, examples, splitting_attribute, threshold):
         greater_than_equal_to = []
@@ -295,7 +298,7 @@ class DecisionTree:
         loop_val = 0
         for child in child_examples:
             child_entrophy = self.entrophy(child)
-            child_probability = len(child)/len(parent_entrophy)
+            child_probability = len(child) / len(parent_examples)
             loop_val = loop_val + (child_entrophy * child_probability)
 
         return parent_entrophy - loop_val
@@ -306,23 +309,20 @@ class DecisionTree:
         # Outline:
         # Entrophy = loop[ - Pi x log(Pi)]
         entropy = 0
-        attribute_list = {}
+        attribute_dictionary = {}
         for example in examples:
             name = example[self.class_name]
-            if name not in attribute_list:
-                attribute_list[name] = 1
-            else:
-                attribute_list[name] += 1
+            if name not in attribute_dictionary:
+                attribute_dictionary[name] = 1 # add the name to the dictionary and mark that it has occured once
+            else: # then it exists and  increment the value for that name
+                attribute_dictionary[name] += 1
 
-        for attribute in attribute_list.keys():
-            probability = attribute_list[attribute] / len(examples)
+        for attribute in attribute_dictionary.keys():# iterate through the keys (the number of occurances)
+            probability = attribute_dictionary[attribute] / len(examples)
             entropy -= (probability * math.log(probability, 2))
 
         return entropy
 
-
-
-    
     def classify(self, example):
         """Perform inference on a single example.
 
@@ -334,9 +334,8 @@ class DecisionTree:
         Notes from assignment worksheet:
         Should use the classify() method defined in other tree nodes
         """
-        #
-        # fill in the function body here!
-        #
+
+        # Taking the hint from the assignment pdf:
         return self.root.classify(example)
 
     def __str__(self):
@@ -346,21 +345,22 @@ class DecisionTree:
 
     def _ascii_tree(self, node):
         """Super high-tech tree-printing ascii-art madness."""
-        indent = 6  # adjust this to decrease or increase width of output 
+        indent = 6  # adjust this to decrease or increase width of output
         if type(node) == LeafNode:
-            return [""], "leaf {} {}/{}={:.2f}".format(node.pred_class, node.pred_class_count, node.total_count, node.prob), [""]  
+            return [""], "leaf {} {}/{}={:.2f}".format(node.pred_class, node.pred_class_count, node.total_count,
+                                                       node.prob), [""]
         else:
             child_ln_bef, child_ln, child_ln_aft = self._ascii_tree(node.child_ge)
-            lines_before = [ " "*indent*2 + " " + " "*indent + line for line in child_ln_bef ]            
-            lines_before.append(" "*indent*2 + u'\u250c' + " >={}----".format(node.test_attr_threshold) + child_ln)
-            lines_before.extend([ " "*indent*2 + "|" + " "*indent + line for line in child_ln_aft ])
+            lines_before = [" " * indent * 2 + " " + " " * indent + line for line in child_ln_bef]
+            lines_before.append(" " * indent * 2 + u'\u250c' + " >={}----".format(node.test_attr_threshold) + child_ln)
+            lines_before.extend([" " * indent * 2 + "|" + " " * indent + line for line in child_ln_aft])
 
             line_mid = node.test_attr_name
-            
+
             child_ln_bef, child_ln, child_ln_aft = self._ascii_tree(node.child_lt)
-            lines_after = [ " "*indent*2 + "|" + " "*indent + line for line in child_ln_bef ]
-            lines_after.append(" "*indent*2 + u'\u2514' + "- <{}----".format(node.test_attr_threshold) + child_ln)
-            lines_after.extend([ " "*indent*2 + " " + " "*indent + line for line in child_ln_aft ])
+            lines_after = [" " * indent * 2 + "|" + " " * indent + line for line in child_ln_bef]
+            lines_after.append(" " * indent * 2 + u'\u2514' + "- <{}----".format(node.test_attr_threshold) + child_ln)
+            lines_after.extend([" " * indent * 2 + " " + " " * indent + line for line in child_ln_aft])
 
             return lines_before, line_mid, lines_after
 
@@ -373,29 +373,29 @@ def test_model(model, test_examples, label_ordering):
     for example in test_examples:
         actual = example[model.class_name]
         pred, prob = model.classify(example)
-        print("{:30} pred {:15} ({:.2f}), actual {:15} {}".format(example[model.id_attr_name] + ':', 
-                                                            "'" + pred + "'", prob, 
-                                                            "'" + actual + "'",
-                                                            '*' if pred == actual else ''))
+        print("{:30} pred {:15} ({:.2f}), actual {:15} {}".format(example[model.id_name] + ':',
+                                                                  "'" + pred + "'", prob,
+                                                                  "'" + actual + "'",
+                                                                  '*' if pred == actual else ''))
         if pred == actual:
             correct += 1
         if abs(label_ordering.index(pred) - label_ordering.index(actual)) < 2:
             almost += 1
-        test_act_pred[(actual, pred)] = test_act_pred.get((actual, pred), 0) + 1 
+        test_act_pred[(actual, pred)] = test_act_pred.get((actual, pred), 0) + 1
 
-    acc = correct/len(test_examples)
-    near_acc = almost/len(test_examples)
+    acc = correct / len(test_examples)
+    near_acc = almost / len(test_examples)
     return acc, near_acc, test_act_pred
 
 
 def confusion4x4(labels, vals):
     """Create an normalized predicted vs. actual confusion matrix for four classes."""
-    n = sum([ v for v in vals.values() ])
-    abbr = [ "".join(w[0] for w in lab.split()) for lab in labels ]
-    s =  ""
+    n = sum([v for v in vals.values()])
+    abbr = ["".join(w[0] for w in lab.split()) for lab in labels]
+    s = ""
     s += " actual ___________________________________  \n"
     for ab, labp in zip(abbr, labels):
-        row = [ vals.get((labp, laba), 0)/n for laba in labels ]
+        row = [vals.get((labp, laba), 0) / n for laba in labels]
         s += "       |        |        |        |        | \n"
         s += "  {:^4s} | {:5.2f}  | {:5.2f}  | {:5.2f}  | {:5.2f}  | \n".format(ab, *row)
         s += "       |________|________|________|________| \n"
@@ -407,7 +407,6 @@ def confusion4x4(labels, vals):
 #############################################
 
 if __name__ == '__main__':
-
     path_to_csv = 'town_growth_data.csv'
     id_attr_name = 'town'
     class_attr_name = 'growth'
@@ -430,4 +429,5 @@ if __name__ == '__main__':
 
     # visualize the results and tree in sweet, 8-bit text
     print(confusion4x4(label_ordering, test_act_pred))
-    print(tree) 
+    print(tree)
+
